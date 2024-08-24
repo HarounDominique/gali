@@ -1,4 +1,19 @@
 <div id="map" style="height: 900px; width: 100%; position: relative;"></div>
-<button (click)="toggleSelection()" style="position: absolute; top: 10px; right: 10px; z-index: 1000; background-color: #598ece; border-radius: 20px;  box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.5)">
-  <img [src]="selectingUserPosition ? 'assets/icons/user.png' : 'assets/icons/target.png'" alt="Toggle" style="width: 64px; height: 64px;">
+<button (click)="toggleSelection()"
+        [ngStyle]="{
+    'position': 'absolute',
+    'top': '10px',
+    'right': '10px',
+    'z-index': '1000',
+    'background-color': '#598ece',
+    'border-radius': '20px',
+    'box-shadow': '0px 5px 10px 0px rgba(0, 0, 0, 0.5)',
+    'width': isMobile ? '32px' : '64px',
+    'height': isMobile ? '32px' : '64px',
+    'background-image': 'url(' + currentIcon.options.iconUrl + ')',
+    'background-size': 'contain',
+    'background-repeat': 'no-repeat',
+    'background-position': 'center'
+  }">
 </button>
+

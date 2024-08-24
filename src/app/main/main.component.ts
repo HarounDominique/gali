@@ -21,6 +21,8 @@ export class MainComponent implements OnInit {
   private targetPopup!: L.Popup;
   private distancePopup!: L.Popup;
 
+  isMobile = false;
+
   private userIcon = L.icon({
     iconUrl: 'assets/icons/user.png',
     iconSize: [64, 64],
@@ -42,6 +44,14 @@ export class MainComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeMap();
+    this.isMobile = this.detectMobile();
+  }
+
+  detectMobile(): boolean {
+    const userAgent = navigator.userAgent || navigator.vendor;
+    const isOpera = typeof window !== 'undefined' && 'opera' in window;
+
+    return /android|iPad|iPhone|iPod|windows phone|blackberry|BB10|PlayBook/i.test(userAgent) || isOpera;
   }
 
   toggleSelection(): void {
