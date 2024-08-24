@@ -139,9 +139,16 @@ export class MainComponent implements OnInit {
         this.setUserLocation(lat, lng);
       }, error => {
         console.error("Error al obtener la ubicación: ", error);
+        // Muestra un mensaje al usuario si hay un error al obtener la ubicación
+        alert("No se pudo obtener tu ubicación. Por favor, habilita los permisos de ubicación en tu navegador.");
+      }, {
+        enableHighAccuracy: true, // Activa la mayor precisión posible
+        timeout: 10000, // Tiempo máximo para obtener la ubicación
+        maximumAge: 0 // No usar caché
       });
     } else {
       console.error("Geolocalización no soportada por el navegador.");
+      alert("Tu navegador no soporta la geolocalización.");
     }
   }
 
