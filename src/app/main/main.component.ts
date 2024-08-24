@@ -1,3 +1,4 @@
+import 'zone.js';
 import { Component, OnInit } from '@angular/core';
 import * as L from 'leaflet';
 import { ElevationService } from '../service/elevation-service/elevation.service';
