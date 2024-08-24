@@ -159,7 +159,7 @@ export class MainComponent implements OnInit {
       }
 
       const latlngs = [this.userLocation, this.targetLocation];
-      this.distanceLine = L.polyline(latlngs, {color: 'blue'}).addTo(this.map);
+      this.distanceLine = L.polyline(latlngs, {color: '#598ece'}).addTo(this.map);
 
       const distance = this.userLocation.distanceTo(this.targetLocation);
       const distanceText = distance > 1000
