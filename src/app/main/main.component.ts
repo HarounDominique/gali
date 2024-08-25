@@ -121,7 +121,7 @@ export class MainComponent implements OnInit {
       if (alpha !== undefined) {
         this.currentAlpha = alpha;
         // @ts-ignore
-        //this.rotateMap(alpha);
+        this.rotateMap(alpha);
       }
     });
   }
@@ -132,7 +132,7 @@ export class MainComponent implements OnInit {
       // Aplica la rotación CSS
       mapContainer.style.width = '100%';
       mapContainer.style.height = '100vh';
-      //mapContainer.style.transform = `rotate(${-alpha}deg)`;
+      mapContainer.style.transform = `rotate(${-alpha}deg)`;
       mapContainer.style.transformOrigin = 'center center';
       mapContainer.style.willChange = 'transform';
 
@@ -152,7 +152,7 @@ export class MainComponent implements OnInit {
       const mapContainer = document.getElementById('map');
       if (mapContainer) {
         mapContainer.style.display = 'block'; // Mostrar el mapa
-        //this.rotateMap(this.currentAlpha);
+        this.rotateMap(this.currentAlpha);
 
         // Configura la ubicación del target a 100 metros
         if (this.userLocation) {
@@ -190,7 +190,7 @@ export class MainComponent implements OnInit {
       const targetAlpha = this.calculateBearing(this.userLocation, this.targetLocation);
 
       // Rota el mapa para que el objetivo quede en la parte superior
-      //this.rotateMap(targetAlpha);
+      this.rotateMap(targetAlpha);
     }
   }
 
