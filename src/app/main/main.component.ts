@@ -85,6 +85,8 @@ export class MainComponent implements OnInit {
     }
   }
 
+
+
   switchCamera() {
     if (this.videoStream) {
       const videoElement = document.getElementById('camera') as HTMLVideoElement;
@@ -118,9 +120,27 @@ export class MainComponent implements OnInit {
 
       if (alpha !== undefined) {
         this.currentAlpha = alpha;
+        // @ts-ignore
+        //this.rotateMap(alpha);
       }
     });
   }
+
+  private rotateMap(alpha: number) {
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      // Aplica la rotación CSS
+      mapContainer.style.width = '100%';
+      mapContainer.style.height = '100vh';
+      //mapContainer.style.transform = `rotate(${-alpha}deg)`;
+      mapContainer.style.transformOrigin = 'center center';
+      mapContainer.style.willChange = 'transform';
+
+      // Forzar redibujado del mapa
+      this.map.invalidateSize();
+    }
+  }
+
 
   captureOrientation() {
     if (this.currentAlpha !== null) {
@@ -132,10 +152,11 @@ export class MainComponent implements OnInit {
       const mapContainer = document.getElementById('map');
       if (mapContainer) {
         mapContainer.style.display = 'block'; // Mostrar el mapa
+        //this.rotateMap(this.currentAlpha);
 
-        // Configura la ubicación del target basado en la altitud
+        // Configura la ubicación del target a 100 metros
         if (this.userLocation) {
-          this.setTargetBasedOnElevation(this.currentAlpha);
+          this.setTargetAtDistance(100, this.currentAlpha);
         }
       }
     } else {
@@ -143,7 +164,7 @@ export class MainComponent implements OnInit {
     }
   }
 
-  private setTargetBasedOnElevation(bearingDegrees: number): void {
+  private setTargetAtDistance(distanceMeters: number, bearingDegrees: number): void {
     if (!this.userLocation) return;
 
     const earthRadius = 6371000; // Radio de la Tierra en metros
@@ -152,45 +173,24 @@ export class MainComponent implements OnInit {
     const lat1 = this.userLocation.lat * Math.PI / 180;
     const lng1 = this.userLocation.lng * Math.PI / 180;
 
-    const maxDistance = 10000; // Distancia máxima de búsqueda en metros (por ejemplo, 10 km)
-    const stepDistance = 50; // Distancia en metros entre cada paso de verificación
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distanceMeters / earthRadius) +
+      Math.cos(lat1) * Math.sin(distanceMeters / earthRadius) * Math.cos(bearingRadians));
+    const lng2 = lng1 + Math.atan2(Math.sin(bearingRadians) * Math.sin(distanceMeters / earthRadius) * Math.cos(lat1),
+      Math.cos(distanceMeters / earthRadius) - Math.sin(lat1) * Math.sin(lat2));
 
-    let found = false;
-    let targetLat = lat1;
-    let targetLng = lng1;
+    const targetLat = lat2 * 180 / Math.PI;
+    const targetLng = lng2 * 180 / Math.PI;
 
-    for (let d = stepDistance; d <= maxDistance; d += stepDistance) {
-      const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d / earthRadius) +
-        Math.cos(lat1) * Math.sin(d / earthRadius) * Math.cos(bearingRadians));
-      const lng2 = lng1 + Math.atan2(Math.sin(bearingRadians) * Math.sin(d / earthRadius) * Math.cos(lat1),
-        Math.cos(d / earthRadius) - Math.sin(lat1) * Math.sin(lat2));
-
-      targetLat = lat2 * 180 / Math.PI;
-      targetLng = lng2 * 180 / Math.PI;
-
-      this.elevationService.getElevation(targetLat, targetLng).subscribe(elevation => {
-        const userElevation = this.userLocation?.alt || 0;
-        const elevationDifference = Math.abs(elevation - userElevation);
-
-        if (elevationDifference > 50) { // Si la diferencia de altitud es significativa (p. ej., 50 metros)
-          this.setTargetLocation(targetLat, targetLng);
-          found = true;
-        }
-      });
-
-      if (found) break;
-    }
-
-    if (!found) {
-      // Si no se encontró una diferencia de altitud significativa, establecer el objetivo a la distancia máxima
-      this.setTargetLocation(targetLat, targetLng);
-    }
+    this.setTargetLocation(targetLat, targetLng);
   }
 
   private setTargetLocationBasedOnCompass() {
     if (this.userLocation && this.targetLocation) {
       // Calcula la dirección desde la ubicación del usuario hacia el objetivo
       const targetAlpha = this.calculateBearing(this.userLocation, this.targetLocation);
+
+      // Rota el mapa para que el objetivo quede en la parte superior
+      //this.rotateMap(targetAlpha);
     }
   }
 
@@ -233,6 +233,7 @@ export class MainComponent implements OnInit {
 
     this.getUserLocation();
   }
+
 
   private setUserLocation(lat: number, lng: number): void {
     this.userLocation = L.latLng(lat, lng);
@@ -282,33 +283,7 @@ export class MainComponent implements OnInit {
       });
     }
 
-    this.drawAntPath();
-
-    const distance = this.userLocation?.distanceTo(this.targetLocation);
-    if (distance) {
-      this.distancePopup = L.popup()
-        .setLatLng(this.targetLocation!)
-        .setContent(`Distancia al objetivo: ${distance.toFixed(2)} metros`)
-        .addTo(this.map);
-    }
-
     this.setTargetLocationBasedOnCompass();
-  }
-
-  private drawAntPath(): void {
-    if (this.userLocation && this.targetLocation) {
-      if (this.distanceLine) {
-        this.map.removeLayer(this.distanceLine);
-      }
-
-      this.distanceLine = antPath([[this.userLocation.lat, this.userLocation.lng], [this.targetLocation.lat, this.targetLocation.lng]], {
-        color: '#FF0000',
-        weight: 5,
-        opacity: 0.6,
-        dashArray: [10, 20],
-        pulseColor: '#FFFFFF'
-      }).addTo(this.map);
-    }
   }
 
   private getUserLocation(): void {
