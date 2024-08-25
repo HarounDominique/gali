@@ -24,6 +24,7 @@ export class MainComponent implements OnInit {
   private distancePopup!: L.Popup;
 
   isMobile = false;
+  private currentAlpha: number | null = 0;
 
   private userIcon = L.icon({
     iconUrl: 'assets/icons/user.png',
@@ -258,7 +259,9 @@ export class MainComponent implements OnInit {
   private rotateMap(alpha: number) {
     const mapContainer = document.getElementById('map');
     if (mapContainer) {
-      // Aplica la rotación CSS
+      // Ajustar el tamaño del mapa para evitar huecos blancos
+      mapContainer.style.width = '100%';
+      mapContainer.style.height = '100%';
       mapContainer.style.transform = `rotate(${-alpha}deg)`;
       mapContainer.style.transformOrigin = 'center center';
       mapContainer.style.willChange = 'transform';
@@ -292,5 +295,13 @@ export class MainComponent implements OnInit {
     }
   }
 
+  captureOrientation() {
+    if (this.currentAlpha !== null) {
+      // Rota el mapa solo una vez con la orientación actual
+      this.rotateMap(this.currentAlpha);
+    } else {
+      console.warn('No se ha detectado una orientación válida.');
+    }
+  }
 
 }
