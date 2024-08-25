@@ -248,8 +248,19 @@ export class MainComponent implements OnInit {
       // Ajusta el target en función de la dirección en la que apunta el dispositivo
       if (alpha !== undefined && this.userLocation) {
         this.setTargetLocationBasedOnCompass(alpha);
+        // @ts-ignore
+        this.rotateMap(alpha);
       }
     });
+  }
+
+  rotateMap(alpha: number) {
+    // Ajusta la transformación CSS del contenedor del mapa
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      mapContainer.style.transform = `rotate(${-alpha}deg)`;
+      mapContainer.style.transformOrigin = 'center center'; // Mantener el centro del mapa como punto de rotación
+    }
   }
 
   setTargetLocationBasedOnCompass(alpha: number | null) {
