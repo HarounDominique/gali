@@ -25,8 +25,6 @@ export class MainComponent implements OnInit {
 
   isMobile = false;
   private currentAlpha: number | null = 0; // Para almacenar la dirección actual de la brújula
-  private videoStream: MediaStream | null = null;
-  private currentCameraId: string | null = null; // ID de la cámara actual
 
   private userIcon = L.icon({
     iconUrl: 'assets/icons/user.png',
@@ -65,45 +63,11 @@ export class MainComponent implements OnInit {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       const videoElement = document.getElementById('camera') as HTMLVideoElement;
       if (videoElement) {
-        this.videoStream = stream;
         videoElement.srcObject = stream;
-        // Obtiene las cámaras disponibles y selecciona la cámara trasera por defecto
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        if (cameras.length > 0) {
-          this.currentCameraId = cameras[0].deviceId; // Selecciona la primera cámara por defecto
-        }
       }
     } catch (err) {
       console.error('Error al acceder a la cámara: ', err);
       alert('No se pudo acceder a la cámara. Por favor, habilita los permisos.');
-    }
-  }
-
-  switchCamera() {
-    if (this.videoStream) {
-      const videoElement = document.getElementById('camera') as HTMLVideoElement;
-      if (videoElement && this.currentCameraId) {
-        navigator.mediaDevices.enumerateDevices().then(devices => {
-          const cameras = devices.filter(device => device.kind === 'videoinput');
-          const nextCamera = cameras.find(camera => camera.deviceId !== this.currentCameraId);
-          if (nextCamera) {
-            this.currentCameraId = nextCamera.deviceId;
-            const constraints = {
-              video: { deviceId: { exact: this.currentCameraId } }
-            };
-            // @ts-ignore
-            this.videoStream.getTracks().forEach(track => track.stop()); // Detiene el stream actual
-            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-              this.videoStream = stream;
-              videoElement.srcObject = stream;
-            }).catch(err => {
-              console.error('Error al cambiar la cámara: ', err);
-              alert('No se pudo cambiar la cámara. Por favor, inténtalo de nuevo.');
-            });
-          }
-        });
-      }
     }
   }
 
@@ -122,6 +86,7 @@ export class MainComponent implements OnInit {
   private rotateMap(alpha: number) {
     const mapContainer = document.getElementById('map');
     if (mapContainer) {
+      // Ajustar el tamaño del mapa para evitar huecos blancos
       mapContainer.style.width = '100%';
       mapContainer.style.height = '100%';
       mapContainer.style.transform = `rotate(${-alpha}deg)`;
@@ -240,6 +205,7 @@ export class MainComponent implements OnInit {
       });
     }
 
+    this.map.setView([lat, lng], 13);
     this.setTargetLocationBasedOnCompass();
   }
 
