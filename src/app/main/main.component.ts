@@ -46,6 +46,8 @@ export class MainComponent implements OnInit {
   ngOnInit(): void {
     this.initializeMap();
     this.isMobile = this.detectMobile();
+    this.requestCameraPermission();
+    this.initializeCompass();
   }
 
   detectMobile(): boolean {
@@ -217,4 +219,57 @@ export class MainComponent implements OnInit {
       });
     }
   }
+
+  async requestCameraPermission() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Puedes usar el stream para mostrar la cámara en un elemento <video>
+      const videoElement = document.querySelector('video');
+      if (videoElement) {
+        videoElement.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Error al acceder a la cámara: ', err);
+      alert('No se pudo acceder a la cámara. Por favor, habilita los permisos.');
+    }
+  }
+
+  initializeCompass() {
+    window.addEventListener('deviceorientation', (event) => {
+      const alpha = event.alpha; // Grados de rotación alrededor del eje Z
+      const beta = event.beta;   // Grados de inclinación hacia adelante/atrás
+      const gamma = event.gamma; // Grados de inclinación hacia izquierda/derecha
+
+      // Usa alpha para determinar la dirección en la que está apuntando el dispositivo
+      console.log('Rotación Z (dirección): ', alpha);
+      console.log('Inclinación adelante/atrás: ', beta);
+      console.log('Inclinación izquierda/derecha: ', gamma);
+
+      // Ajusta el target en función de la dirección en la que apunta el dispositivo
+      if (alpha !== undefined && this.userLocation) {
+        this.setTargetLocationBasedOnCompass(alpha);
+      }
+    });
+  }
+
+  setTargetLocationBasedOnCompass(alpha: number | null) {
+    if (this.userLocation) {
+      const distance = 1000; // Distancia fija (por ejemplo, 1 km)
+      // @ts-ignore
+      const alphaRadians = alpha * Math.PI / 180; // Convertir alpha a radianes
+
+      // Aproximaciones para cálculos de latitud y longitud
+      const metersPerDegreeLatitude = 111320; // Aproximadamente el número de metros por grado de latitud
+      const earthCircumference = 40075000; // Circunferencia de la Tierra en metros
+
+      // Calcular la latitud y longitud del destino
+      const targetLat = this.userLocation.lat + (distance * Math.cos(alphaRadians)) / metersPerDegreeLatitude;
+      const targetLng = this.userLocation.lng + (distance * Math.sin(alphaRadians)) / (earthCircumference * Math.cos(this.userLocation.lat * Math.PI / 180) / 360);
+
+      // Llama a la función para establecer la ubicación del objetivo
+      this.setTargetLocation(targetLat, targetLng);
+    }
+  }
+
+
 }
