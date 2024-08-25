@@ -1,7 +1,9 @@
 import 'zone.js';
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import * as L from 'leaflet';
-import {ElevationService} from '../service/elevation-service/elevation.service';
+import { ElevationService } from '../service/elevation-service/elevation.service';
+// @ts-ignore
+import { AntPath, antPath } from 'leaflet-ant-path';
 
 @Component({
   selector: 'app-main',
@@ -14,7 +16,7 @@ export class MainComponent implements OnInit {
   private targetMarker!: L.Marker;
   private userLocation: L.LatLng | null = null;
   private targetLocation: L.LatLng | null = null;
-  private distanceLine!: L.Polyline;
+  private distanceLine: L.Polyline | null = null;
   protected selectingUserPosition = false;
 
   private userPopup!: L.Popup;
@@ -39,8 +41,7 @@ export class MainComponent implements OnInit {
 
   currentIcon = this.targetIcon;
 
-  constructor(private elevationService: ElevationService) {
-  }
+  constructor(private elevationService: ElevationService) {}
 
   ngOnInit(): void {
     this.initializeMap();
@@ -86,7 +87,7 @@ export class MainComponent implements OnInit {
     if (this.userMarker) {
       this.userMarker.setLatLng([lat, lng]);
     } else {
-      this.userMarker = L.marker([lat, lng], {icon: this.userIcon}).addTo(this.map);
+      this.userMarker = L.marker([lat, lng], { icon: this.userIcon }).addTo(this.map);
     }
 
     if (this.userLocation) {
@@ -112,7 +113,7 @@ export class MainComponent implements OnInit {
     if (this.targetMarker) {
       this.targetMarker.setLatLng([lat, lng]);
     } else {
-      this.targetMarker = L.marker([lat, lng], {icon: this.targetIcon}).addTo(this.map);
+      this.targetMarker = L.marker([lat, lng], { icon: this.targetIcon }).addTo(this.map);
     }
 
     if (this.targetLocation) {
@@ -133,22 +134,25 @@ export class MainComponent implements OnInit {
 
   private getUserLocation(): void {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(position => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        this.setUserLocation(lat, lng);
-      }, error => {
-        console.error("Error al obtener la ubicación: ", error);
-        // Muestra un mensaje al usuario si hay un error al obtener la ubicación
-        alert("No se pudo obtener tu ubicación. Por favor, habilita los permisos de ubicación en tu navegador.");
-      }, {
-        enableHighAccuracy: true, // Activa la mayor precisión posible
-        timeout: 10000, // Tiempo máximo para obtener la ubicación
-        maximumAge: 0 // No usar caché
-      });
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          this.setUserLocation(lat, lng);
+        },
+        error => {
+          console.error('Error al obtener la ubicación: ', error);
+          alert('No se pudo obtener tu ubicación. Por favor, habilita los permisos de ubicación en tu navegador.');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
     } else {
-      console.error("Geolocalización no soportada por el navegador.");
-      alert("Tu navegador no soporta la geolocalización.");
+      console.error('Geolocalización no soportada por el navegador.');
+      alert('Tu navegador no soporta la geolocalización.');
     }
   }
 
@@ -159,12 +163,20 @@ export class MainComponent implements OnInit {
       }
 
       const latlngs = [this.userLocation, this.targetLocation];
-      this.distanceLine = L.polyline(latlngs, {color: '#598ece'}).addTo(this.map);
+      const options = {
+        use: L.polyline,
+        delay: 400,
+        dashArray: [10, 20],
+        weight: 5,
+        color: '#0000FF',
+        pulseColor: '#FFFFFF'
+      };
+
+      this.distanceLine = antPath(latlngs, options).addTo(this.map);
 
       const distance = this.userLocation.distanceTo(this.targetLocation);
-      const distanceText = distance > 1000
-        ? `${(distance / 1000).toFixed(2)} km`
-        : `${distance.toFixed(2)} m`;
+      const distanceText =
+        distance > 1000 ? `${(distance / 1000).toFixed(2)} km` : `${distance.toFixed(2)} m`;
 
       const midPoint = L.latLng(
         (this.userLocation.lat + this.targetLocation.lat) / 2,
@@ -180,7 +192,7 @@ export class MainComponent implements OnInit {
         .setContent(`Distancia: ${distanceText}`)
         .addTo(this.map);
 
-      //Se refresca el popup que muestra la altitud del user:
+      // Refrescar el popup que muestra la altitud del usuario
       this.elevationService.getElevation(this.userLocation.lat, this.userLocation.lng).subscribe(elevation => {
         if (this.userPopup) {
           this.userPopup.remove();
@@ -192,7 +204,7 @@ export class MainComponent implements OnInit {
           .addTo(this.map);
       });
 
-      //Se refresca el popup que muestra la altitud del destino:
+      // Refrescar el popup que muestra la altitud del destino
       this.elevationService.getElevation(this.targetLocation.lat, this.targetLocation.lng).subscribe(elevation => {
         if (this.targetPopup) {
           this.targetPopup.remove();
@@ -203,8 +215,6 @@ export class MainComponent implements OnInit {
           .setContent(`Altitud del destino: ${elevation} metros`)
           .addTo(this.map);
       });
-
-
     }
   }
 }
