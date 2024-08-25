@@ -80,6 +80,7 @@ export class MainComponent implements OnInit {
     }
   }
 
+
   switchCamera() {
     if (this.videoStream) {
       const videoElement = document.getElementById('camera') as HTMLVideoElement;
@@ -122,8 +123,9 @@ export class MainComponent implements OnInit {
   private rotateMap(alpha: number) {
     const mapContainer = document.getElementById('map');
     if (mapContainer) {
+      // Aplica la rotación CSS
       mapContainer.style.width = '100%';
-      mapContainer.style.height = '100%';
+      mapContainer.style.height = '100vh';
       mapContainer.style.transform = `rotate(${-alpha}deg)`;
       mapContainer.style.transformOrigin = 'center center';
       mapContainer.style.willChange = 'transform';
@@ -133,14 +135,15 @@ export class MainComponent implements OnInit {
     }
   }
 
+
   captureOrientation() {
     if (this.currentAlpha !== null) {
-      // Rota el mapa solo una vez con la orientación actual
       this.rotateMap(this.currentAlpha);
     } else {
       console.warn('No se ha detectado una orientación válida.');
     }
   }
+
 
   private setTargetLocationBasedOnCompass() {
     if (this.userLocation && this.targetLocation) {
