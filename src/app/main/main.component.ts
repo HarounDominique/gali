@@ -24,7 +24,7 @@ export class MainComponent implements OnInit {
   private distancePopup!: L.Popup;
 
   isMobile = false;
-  private currentAlpha: number | null = 0; // Para almacenar la dirección actual de la brújula
+  private currentAlpha: number | null = 0;
 
   private userIcon = L.icon({
     iconUrl: 'assets/icons/user.png',
@@ -56,79 +56,6 @@ export class MainComponent implements OnInit {
     const isOpera = typeof window !== 'undefined' && 'opera' in window;
 
     return /android|iPad|iPhone|iPod|windows phone|blackberry|BB10|PlayBook/i.test(userAgent) || isOpera;
-  }
-
-  async requestCameraPermission() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const videoElement = document.getElementById('camera') as HTMLVideoElement;
-      if (videoElement) {
-        videoElement.srcObject = stream;
-      }
-    } catch (err) {
-      console.error('Error al acceder a la cámara: ', err);
-      alert('No se pudo acceder a la cámara. Por favor, habilita los permisos.');
-    }
-  }
-
-  initializeCompass() {
-    window.addEventListener('deviceorientation', (event) => {
-      const alpha = event.alpha; // Dirección en grados
-
-      if (alpha !== undefined) {
-        this.currentAlpha = alpha;
-        // @ts-ignore
-        this.rotateMap(alpha);
-      }
-    });
-  }
-
-  private rotateMap(alpha: number) {
-    const mapContainer = document.getElementById('map');
-    if (mapContainer) {
-      // Ajustar el tamaño del mapa para evitar huecos blancos
-      mapContainer.style.width = '100%';
-      mapContainer.style.height = '100%';
-      mapContainer.style.transform = `rotate(${-alpha}deg)`;
-      mapContainer.style.transformOrigin = 'center center';
-      mapContainer.style.willChange = 'transform';
-
-      // Forzar redibujado del mapa
-      this.map.invalidateSize();
-    }
-  }
-
-  captureOrientation() {
-    if (this.currentAlpha !== null) {
-      // Rota el mapa solo una vez con la orientación actual
-      this.rotateMap(this.currentAlpha);
-    } else {
-      console.warn('No se ha detectado una orientación válida.');
-    }
-  }
-
-  private setTargetLocationBasedOnCompass() {
-    if (this.userLocation && this.targetLocation) {
-      // Calcula la dirección desde la ubicación del usuario hacia el objetivo
-      const targetAlpha = this.calculateBearing(this.userLocation, this.targetLocation);
-
-      // Rota el mapa para que el objetivo quede en la parte superior
-      this.rotateMap(targetAlpha);
-    }
-  }
-
-  private calculateBearing(start: L.LatLng, end: L.LatLng): number {
-    const startLat = start.lat * Math.PI / 180;
-    const startLng = start.lng * Math.PI / 180;
-    const endLat = end.lat * Math.PI / 180;
-    const endLng = end.lng * Math.PI / 180;
-
-    const dLng = endLng - startLng;
-    const y = Math.sin(dLng) * Math.cos(endLat);
-    const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(dLng);
-
-    const bearing = Math.atan2(y, x) * 180 / Math.PI;
-    return (bearing + 360) % 360; // Ajusta el ángulo para estar en el rango [0, 360)
   }
 
   toggleSelection(): void {
@@ -180,7 +107,7 @@ export class MainComponent implements OnInit {
     }
 
     this.map.setView([lat, lng], 13);
-    this.setTargetLocationBasedOnCompass();
+    this.updateDistance();
   }
 
   private setTargetLocation(lat: number, lng: number): void {
@@ -200,25 +127,181 @@ export class MainComponent implements OnInit {
 
         this.targetPopup = L.popup()
           .setLatLng(this.targetLocation!)
-          .setContent(`Altitud del objetivo: ${elevation} metros`)
+          .setContent(`Altitud del destino: ${elevation} metros`)
           .addTo(this.map);
       });
     }
 
-    this.map.setView([lat, lng], 13);
-    this.setTargetLocationBasedOnCompass();
+    this.updateDistance();
   }
 
   private getUserLocation(): void {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        this.setUserLocation(lat, lng);
-      },
-      (error) => {
-        console.error('Error al obtener la ubicación del usuario: ', error);
-      }
-    );
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          this.setUserLocation(lat, lng);
+        },
+        error => {
+          console.error('Error al obtener la ubicación: ', error);
+          alert('No se pudo obtener tu ubicación. Por favor, habilita los permisos de ubicación en tu navegador.');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      console.error('Geolocalización no soportada por el navegador.');
+      alert('Tu navegador no soporta la geolocalización.');
+    }
   }
+
+  private updateDistance(): void {
+    if (this.userLocation && this.targetLocation) {
+      if (this.distanceLine) {
+        this.map.removeLayer(this.distanceLine);
+      }
+
+      const latlngs = [this.userLocation, this.targetLocation];
+      const options = {
+        use: L.polyline,
+        delay: 400,
+        dashArray: [10, 20],
+        weight: 5,
+        color: '#0000FF',
+        pulseColor: '#FFFFFF'
+      };
+
+      this.distanceLine = antPath(latlngs, options).addTo(this.map);
+
+      const distance = this.userLocation.distanceTo(this.targetLocation);
+      const distanceText =
+        distance > 1000 ? `${(distance / 1000).toFixed(2)} km` : `${distance.toFixed(2)} m`;
+
+      const midPoint = L.latLng(
+        (this.userLocation.lat + this.targetLocation.lat) / 2,
+        (this.userLocation.lng + this.targetLocation.lng) / 2
+      );
+
+      if (this.distancePopup) {
+        this.distancePopup.remove();
+      }
+
+      this.distancePopup = L.popup()
+        .setLatLng(midPoint)
+        .setContent(`Distancia: ${distanceText}`)
+        .addTo(this.map);
+
+      // Refrescar el popup que muestra la altitud del usuario
+      this.elevationService.getElevation(this.userLocation.lat, this.userLocation.lng).subscribe(elevation => {
+        if (this.userPopup) {
+          this.userPopup.remove();
+        }
+
+        this.userPopup = L.popup()
+          .setLatLng(this.userLocation!)
+          .setContent(`Altitud del usuario: ${elevation} metros`)
+          .addTo(this.map);
+      });
+
+      // Refrescar el popup que muestra la altitud del destino
+      this.elevationService.getElevation(this.targetLocation.lat, this.targetLocation.lng).subscribe(elevation => {
+        if (this.targetPopup) {
+          this.targetPopup.remove();
+        }
+
+        this.targetPopup = L.popup()
+          .setLatLng(this.targetLocation!)
+          .setContent(`Altitud del destino: ${elevation} metros`)
+          .addTo(this.map);
+      });
+    }
+  }
+
+  async requestCameraPermission() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Puedes usar el stream para mostrar la cámara en un elemento <video>
+      const videoElement = document.querySelector('video');
+      if (videoElement) {
+        videoElement.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Error al acceder a la cámara: ', err);
+      alert('No se pudo acceder a la cámara. Por favor, habilita los permisos.');
+    }
+  }
+
+  initializeCompass() {
+    window.addEventListener('deviceorientation', (event) => {
+      const alpha = event.alpha; // Grados de rotación alrededor del eje Z
+      const beta = event.beta;   // Grados de inclinación hacia adelante/atrás
+      const gamma = event.gamma; // Grados de inclinación hacia izquierda/derecha
+
+      // Usa alpha para determinar la dirección en la que está apuntando el dispositivo
+      console.log('Rotación Z (dirección): ', alpha);
+      console.log('Inclinación adelante/atrás: ', beta);
+      console.log('Inclinación izquierda/derecha: ', gamma);
+
+      // Ajusta el target en función de la dirección en la que apunta el dispositivo
+      if (alpha !== undefined && this.userLocation) {
+        // @ts-ignore
+        this.setTargetLocationBasedOnCompass(alpha);
+        // @ts-ignore
+        this.rotateMap(alpha);
+      }
+    });
+  }
+
+  private rotateMap(alpha: number) {
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      // Ajustar el tamaño del mapa para evitar huecos blancos
+      mapContainer.style.width = '100%';
+      mapContainer.style.height = '100%';
+      mapContainer.style.transform = `rotate(${-alpha}deg)`;
+      mapContainer.style.transformOrigin = 'center center';
+      mapContainer.style.willChange = 'transform';
+
+      // Forzar redibujado del mapa
+      this.map.invalidateSize();
+    }
+  }
+
+  private calculateBearing(start: L.LatLng, end: L.LatLng): number {
+    const startLat = start.lat * Math.PI / 180;
+    const startLng = start.lng * Math.PI / 180;
+    const endLat = end.lat * Math.PI / 180;
+    const endLng = end.lng * Math.PI / 180;
+
+    const dLng = endLng - startLng;
+    const y = Math.sin(dLng) * Math.cos(endLat);
+    const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(dLng);
+
+    const bearing = Math.atan2(y, x) * 180 / Math.PI;
+    return (bearing + 360) % 360; // Ajusta el ángulo para estar en el rango [0, 360)
+  }
+
+  private setTargetLocationBasedOnCompass() {
+    if (this.userLocation && this.targetLocation) {
+      // Calcula la dirección desde la ubicación del usuario hacia el objetivo
+      const targetAlpha = this.calculateBearing(this.userLocation, this.targetLocation);
+
+      // Rota el mapa para que el objetivo quede en la parte superior
+      this.rotateMap(targetAlpha);
+    }
+  }
+
+  captureOrientation() {
+    if (this.currentAlpha !== null) {
+      // Rota el mapa solo una vez con la orientación actual
+      this.rotateMap(this.currentAlpha);
+    } else {
+      console.warn('No se ha detectado una orientación válida.');
+    }
+  }
+
 }
