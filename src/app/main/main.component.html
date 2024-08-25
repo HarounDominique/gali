@@ -15,6 +15,26 @@
     'background-repeat': 'no-repeat',
     'background-position': 'center'
   }"> </button>
+
 <button (click)="switchCamera()">Cambiar Cámara</button>
 <video id="camera" autoplay playsinline></video>
+
+<!-- Botón para cambiar entre cámara y mapa -->
+<button (click)="toggleCameraMapView()"
+        [ngStyle]="{
+    'position': 'absolute',
+    'top': '10px',
+    'left': '10px',
+    'z-index': '1000',
+    'background-color': '#598ece',
+    'border-radius': '20px',
+    'box-shadow': '0px 5px 10px 0px rgba(0, 0, 0, 0.5)',
+    'width': isMobile ? '40px' : '64px',
+    'height': isMobile ? '40px' : '64px',
+    'color': '#fff',
+    'font-size': '16px'
+  }">
+  {{ isMapVisible ? 'Ver Cámara' : 'Ver Mapa' }}
+</button>
+
 <button (click)="captureOrientation()">Capturar Orientación</button>
