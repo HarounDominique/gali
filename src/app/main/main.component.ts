@@ -24,10 +24,9 @@ export class MainComponent implements OnInit {
   private distancePopup!: L.Popup;
 
   isMobile = false;
-  isMapVisible = false;
-  private currentAlpha: number | null = 0;
+  private currentAlpha: number | null = 0; // Para almacenar la dirección actual de la brújula
   private videoStream: MediaStream | null = null;
-  private currentCameraId: string | null = null;
+  private currentCameraId: string | null = null; // ID de la cámara actual
 
   private userIcon = L.icon({
     iconUrl: 'assets/icons/user.png',
@@ -110,21 +109,6 @@ export class MainComponent implements OnInit {
           }
         });
       }
-    }
-  }
-
-  toggleCameraMapView(): void {
-    this.isMapVisible = !this.isMapVisible;
-
-    const mapContainer = document.getElementById('map');
-    const videoElement = document.getElementById('camera') as HTMLVideoElement;
-
-    if (this.isMapVisible) {
-      if (mapContainer) mapContainer.style.display = 'block';  // Mostrar el mapa
-      if (videoElement) videoElement.style.display = 'none';    // Ocultar la cámara
-    } else {
-      if (mapContainer) mapContainer.style.display = 'none';    // Ocultar el mapa
-      if (videoElement) videoElement.style.display = 'block';   // Mostrar la cámara
     }
   }
 
