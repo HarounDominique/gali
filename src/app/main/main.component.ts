@@ -247,7 +247,6 @@ export class MainComponent implements OnInit {
 
       // Ajusta el target en función de la dirección en la que apunta el dispositivo
       if (alpha !== undefined && this.userLocation) {
-        // @ts-ignore
         this.setTargetLocationBasedOnCompass(alpha);
         // @ts-ignore
         this.rotateMap(alpha);
@@ -255,40 +254,31 @@ export class MainComponent implements OnInit {
     });
   }
 
-  private rotateMap(alpha: number) {
+  rotateMap(alpha: number) {
+    // Ajusta la transformación CSS del contenedor del mapa
     const mapContainer = document.getElementById('map');
     if (mapContainer) {
-      // Aplica la rotación CSS
       mapContainer.style.transform = `rotate(${-alpha}deg)`;
-      mapContainer.style.transformOrigin = 'center center';
-      mapContainer.style.willChange = 'transform';
-
-      // Forzar redibujado del mapa
-      this.map.invalidateSize();
+      mapContainer.style.transformOrigin = 'center center'; // Mantener el centro del mapa como punto de rotación
     }
   }
 
-  private calculateBearing(start: L.LatLng, end: L.LatLng): number {
-    const startLat = start.lat * Math.PI / 180;
-    const startLng = start.lng * Math.PI / 180;
-    const endLat = end.lat * Math.PI / 180;
-    const endLng = end.lng * Math.PI / 180;
+  setTargetLocationBasedOnCompass(alpha: number | null) {
+    if (this.userLocation) {
+      const distance = 1000; // Distancia fija (por ejemplo, 1 km)
+      // @ts-ignore
+      const alphaRadians = alpha * Math.PI / 180; // Convertir alpha a radianes
 
-    const dLng = endLng - startLng;
-    const y = Math.sin(dLng) * Math.cos(endLat);
-    const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(dLng);
+      // Aproximaciones para cálculos de latitud y longitud
+      const metersPerDegreeLatitude = 111320; // Aproximadamente el número de metros por grado de latitud
+      const earthCircumference = 40075000; // Circunferencia de la Tierra en metros
 
-    const bearing = Math.atan2(y, x) * 180 / Math.PI;
-    return (bearing + 360) % 360; // Ajusta el ángulo para estar en el rango [0, 360)
-  }
+      // Calcular la latitud y longitud del destino
+      const targetLat = this.userLocation.lat + (distance * Math.cos(alphaRadians)) / metersPerDegreeLatitude;
+      const targetLng = this.userLocation.lng + (distance * Math.sin(alphaRadians)) / (earthCircumference * Math.cos(this.userLocation.lat * Math.PI / 180) / 360);
 
-  private setTargetLocationBasedOnCompass() {
-    if (this.userLocation && this.targetLocation) {
-      // Calcula la dirección desde la ubicación del usuario hacia el objetivo
-      const targetAlpha = this.calculateBearing(this.userLocation, this.targetLocation);
-
-      // Rota el mapa para que el objetivo quede en la parte superior
-      this.rotateMap(targetAlpha);
+      // Llama a la función para establecer la ubicación del objetivo
+      this.setTargetLocation(targetLat, targetLng);
     }
   }
 
