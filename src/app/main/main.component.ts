@@ -62,16 +62,21 @@ export class MainComponent implements OnInit {
 
   async requestCameraPermission() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const videoElement = document.getElementById('camera') as HTMLVideoElement;
-      if (videoElement) {
-        this.videoStream = stream;
-        videoElement.srcObject = stream;
-        // Obtiene las cámaras disponibles y selecciona la cámara trasera por defecto
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        if (cameras.length > 0) {
-          this.currentCameraId = cameras[0].deviceId; // Selecciona la primera cámara por defecto
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back')) || cameras[0];
+
+      if (rearCamera) {
+        this.currentCameraId = rearCamera.deviceId;
+        const constraints = {
+          video: { deviceId: { exact: this.currentCameraId } }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const videoElement = document.getElementById('camera') as HTMLVideoElement;
+        if (videoElement) {
+          this.videoStream = stream;
+          videoElement.srcObject = stream;
+          videoElement.style.display = 'block'; // Mostrar la cámara
         }
       }
     } catch (err) {
@@ -79,6 +84,7 @@ export class MainComponent implements OnInit {
       alert('No se pudo acceder a la cámara. Por favor, habilita los permisos.');
     }
   }
+
 
 
   switchCamera() {
@@ -138,12 +144,45 @@ export class MainComponent implements OnInit {
 
   captureOrientation() {
     if (this.currentAlpha !== null) {
-      this.rotateMap(this.currentAlpha);
+      const videoElement = document.getElementById('camera') as HTMLVideoElement;
+      if (videoElement) {
+        videoElement.style.display = 'none'; // Ocultar la cámara
+      }
+
+      const mapContainer = document.getElementById('map');
+      if (mapContainer) {
+        mapContainer.style.display = 'block'; // Mostrar el mapa
+        this.rotateMap(this.currentAlpha);
+
+        // Configura la ubicación del target a 100 metros
+        if (this.userLocation) {
+          this.setTargetAtDistance(100, this.currentAlpha);
+        }
+      }
     } else {
       console.warn('No se ha detectado una orientación válida.');
     }
   }
 
+  private setTargetAtDistance(distanceMeters: number, bearingDegrees: number): void {
+    if (!this.userLocation) return;
+
+    const earthRadius = 6371000; // Radio de la Tierra en metros
+    const bearingRadians = bearingDegrees * Math.PI / 180;
+
+    const lat1 = this.userLocation.lat * Math.PI / 180;
+    const lng1 = this.userLocation.lng * Math.PI / 180;
+
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distanceMeters / earthRadius) +
+      Math.cos(lat1) * Math.sin(distanceMeters / earthRadius) * Math.cos(bearingRadians));
+    const lng2 = lng1 + Math.atan2(Math.sin(bearingRadians) * Math.sin(distanceMeters / earthRadius) * Math.cos(lat1),
+      Math.cos(distanceMeters / earthRadius) - Math.sin(lat1) * Math.sin(lat2));
+
+    const targetLat = lat2 * 180 / Math.PI;
+    const targetLng = lng2 * 180 / Math.PI;
+
+    this.setTargetLocation(targetLat, targetLng);
+  }
 
   private setTargetLocationBasedOnCompass() {
     if (this.userLocation && this.targetLocation) {
@@ -194,6 +233,7 @@ export class MainComponent implements OnInit {
 
     this.getUserLocation();
   }
+
 
   private setUserLocation(lat: number, lng: number): void {
     this.userLocation = L.latLng(lat, lng);
