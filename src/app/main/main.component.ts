@@ -165,7 +165,7 @@ export class MainComponent implements OnInit {
       const latlngs = [this.userLocation, this.targetLocation];
       const options = {
         use: L.polyline,
-        delay: 400,
+        delay: 800,
         dashArray: [10, 20],
         weight: 5,
         color: '#0000FF',
