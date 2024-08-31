@@ -41,9 +41,9 @@ export class MainComponent implements OnInit {
 
 
   currentIcon = this.targetIcon;
-  private userAltitude: number = undefined!;
-  private targetAltitude: number = undefined!;
-  private distanceToTarget: number = undefined!;
+  private userAltitude: number | null = null;
+  private targetAltitude: number | null = null;
+  private distanceToTarget: number | null = null;
 
   constructor(private elevationService: ElevationService) {}
 
@@ -75,6 +75,8 @@ export class MainComponent implements OnInit {
       const lat = event.latlng.lat;
       const lng = event.latlng.lng;
 
+      //this.getUserLocation();
+
       if (this.selectingUserPosition) {
         this.setUserLocation(lat, lng);
       } else {
@@ -103,8 +105,8 @@ export class MainComponent implements OnInit {
         },
         error => {
           console.error('Error al obtener la altitud: ', error);
-          alert('No se pudo obtener la altitud del usuario debido a un problema de red. Por favor, inténtalo de nuevo más tarde.');
-          this.userAltitude = null!; // O asignar un valor predeterminado si lo prefieres
+          console.log('No se pudo obtener la altitud del usuario debido a un problema de red. Por favor, inténtalo de nuevo más tarde.');
+          this.userAltitude = null!;
         }
       );
     }
@@ -139,7 +141,6 @@ export class MainComponent implements OnInit {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
 
-          // Llamar a setUserLocation para establecer la ubicación y actualizar la altitud
           this.setUserLocation(lat, lng);
         },
         error => {
