@@ -41,6 +41,9 @@ export class MainComponent implements OnInit {
 
 
   currentIcon = this.targetIcon;
+  private userAltitude: number = undefined!;
+  private targetAltitude: number = undefined!;
+  private distanceToTarget: number = undefined!;
 
   constructor(private elevationService: ElevationService) {}
 
@@ -92,20 +95,21 @@ export class MainComponent implements OnInit {
     }
 
     if (this.userLocation) {
-      this.elevationService.getElevation(lat, lng).subscribe(elevation => {
-        if (this.userPopup) {
-          this.userPopup.remove();
+      this.elevationService.getElevation(lat, lng).subscribe(
+        elevation => {
+          this.userAltitude = elevation; // Asignar la altitud del usuario
+          console.log(`Altitud del usuario establecida: ${this.userAltitude} metros`);
+          this.updateDistance(); // Asegurar que la distancia se actualiza después de obtener la altitud
+        },
+        error => {
+          console.error('Error al obtener la altitud: ', error);
+          alert('No se pudo obtener la altitud del usuario debido a un problema de red. Por favor, inténtalo de nuevo más tarde.');
+          this.userAltitude = null!; // O asignar un valor predeterminado si lo prefieres
         }
-
-        this.userPopup = L.popup()
-          .setLatLng(this.userLocation!)
-          .setContent(`Altitud del usuario: ${elevation} metros`)
-          .addTo(this.map);
-      });
+      );
     }
 
     this.map.setView([lat, lng], 13);
-    this.updateDistance();
   }
 
   private setTargetLocation(lat: number, lng: number): void {
@@ -119,19 +123,14 @@ export class MainComponent implements OnInit {
 
     if (this.targetLocation) {
       this.elevationService.getElevation(lat, lng).subscribe(elevation => {
-        if (this.targetPopup) {
-          this.targetPopup.remove();
-        }
-
-        this.targetPopup = L.popup()
-          .setLatLng(this.targetLocation!)
-          .setContent(`Altitud del destino: ${elevation} metros`)
-          .addTo(this.map);
+        this.targetAltitude = elevation; // Asignar la altitud del target
       });
     }
 
     this.updateDistance();
   }
+
+
 
   private getUserLocation(): void {
     if (navigator.geolocation) {
@@ -139,6 +138,8 @@ export class MainComponent implements OnInit {
         position => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
+
+          // Llamar a setUserLocation para establecer la ubicación y actualizar la altitud
           this.setUserLocation(lat, lng);
         },
         error => {
@@ -169,53 +170,14 @@ export class MainComponent implements OnInit {
         delay: 800,
         dashArray: [10, 20],
         weight: 5,
-        color: '#0000FF',
+        color: '#0022ff',
         pulseColor: '#FFFFFF'
       };
 
       this.distanceLine = antPath(latlngs, options).addTo(this.map);
 
       const distance = this.userLocation.distanceTo(this.targetLocation);
-      const distanceText =
-        distance > 1000 ? `${(distance / 1000).toFixed(2)} km` : `${distance.toFixed(2)} m`;
-
-      const midPoint = L.latLng(
-        (this.userLocation.lat + this.targetLocation.lat) / 2,
-        (this.userLocation.lng + this.targetLocation.lng) / 2
-      );
-
-      if (this.distancePopup) {
-        this.distancePopup.remove();
-      }
-
-      this.distancePopup = L.popup()
-        .setLatLng(midPoint)
-        .setContent(`Distancia: ${distanceText}`)
-        .addTo(this.map);
-
-      // Refrescar el popup que muestra la altitud del usuario
-      this.elevationService.getElevation(this.userLocation.lat, this.userLocation.lng).subscribe(elevation => {
-        if (this.userPopup) {
-          this.userPopup.remove();
-        }
-
-        this.userPopup = L.popup()
-          .setLatLng(this.userLocation!)
-          .setContent(`Altitud del usuario: ${elevation} metros`)
-          .addTo(this.map);
-      });
-
-      // Refrescar el popup que muestra la altitud del destino
-      this.elevationService.getElevation(this.targetLocation.lat, this.targetLocation.lng).subscribe(elevation => {
-        if (this.targetPopup) {
-          this.targetPopup.remove();
-        }
-
-        this.targetPopup = L.popup()
-          .setLatLng(this.targetLocation!)
-          .setContent(`Altitud del destino: ${elevation} metros`)
-          .addTo(this.map);
-      });
+      this.distanceToTarget = Math.round(distance);
     }
   }
 }
