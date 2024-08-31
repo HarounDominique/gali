@@ -28,16 +28,17 @@ export class MainComponent implements OnInit {
   private userIcon = L.icon({
     iconUrl: 'assets/icons/user.png',
     iconSize: [50, 50],
-    iconAnchor: [16, 32],
+    iconAnchor: [25, 48],
     popupAnchor: [0, -32]
   });
 
   private targetIcon = L.icon({
     iconUrl: 'assets/icons/target.png',
     iconSize: [40, 40],
-    iconAnchor: [16, 32],
+    iconAnchor: [20, 36],
     popupAnchor: [0, -32]
   });
+
 
   currentIcon = this.targetIcon;
 
