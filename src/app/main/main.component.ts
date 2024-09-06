@@ -1,5 +1,5 @@
 import 'zone.js';
-import { Component, OnInit } from '@angular/core';
+import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import * as L from 'leaflet';
 import { ElevationService } from '../service/elevation-service/elevation.service';
 // @ts-ignore
@@ -18,6 +18,8 @@ export class MainComponent implements OnInit {
   private targetLocation: L.LatLng | null = null;
   private distanceLine: L.Polyline | null = null;
   protected selectingUserPosition = false;
+  isCameraViewEnabled = false;
+  @ViewChild('videoElement') videoElement!: ElementRef;
 
   private userPopup!: L.Popup;
   private targetPopup!: L.Popup;
@@ -181,4 +183,45 @@ export class MainComponent implements OnInit {
       this.distanceToTarget = Math.round(distance);
     }
   }
+
+  // Función para habilitar/deshabilitar la cámara
+  toggleCameraView(): void {
+    this.isCameraViewEnabled = !this.isCameraViewEnabled;
+
+    if (this.isCameraViewEnabled) {
+      this.startCamera();
+    } else {
+      this.stopCamera();
+    }
+  }
+
+  // Función para acceder a la cámara trasera
+  startCamera(): void {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } }
+      })
+        .then((stream) => {
+          const video = this.videoElement.nativeElement;
+          video.srcObject = stream;
+          video.play();
+        })
+        .catch((error) => {
+          console.error("Error al acceder a la cámara: ", error);
+          alert('No se pudo acceder a la cámara.');
+        });
+    }
+  }
+
+  // Función para detener el stream de la cámara
+  stopCamera(): void {
+    const video = this.videoElement.nativeElement;
+    const stream = video.srcObject as MediaStream;
+    if (stream) {
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());  // Detener todas las pistas (cámara)
+    }
+    video.srcObject = null;
+  }
+
 }
