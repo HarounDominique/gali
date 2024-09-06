@@ -15,6 +15,22 @@
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.5);
   z-index: 1000;
 ">
+  <!-- Camera Button -->
+  <button (click)="toggleCameraView()"
+          style="
+          background-color: transparent;
+          border: 2px solid #598ece;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          background-image: url('assets/icons/camera-icon.png');
+          background-size: 70%;
+          background-repeat: no-repeat;
+          background-position: center;
+          cursor: pointer;
+          margin-left: 10px;
+        ">
+  </button>
 
   <!-- Info Section -->
   <div style="
@@ -53,5 +69,21 @@
       'margin-right': '10px'
     }">
   </button>
+
+  <!-- Camera View -->
+  <div *ngIf="isCameraViewEnabled" id="cameraView" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+">
+    <video #videoElement style="width: 100%; height: 100%; object-fit: cover;" autoplay></video>
+  </div>
 
 </div>
